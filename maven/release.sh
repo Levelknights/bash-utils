@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function mvnExpression {
-    mvn help:evaluate -Dexpression=$1 | grep -v -e "\[INFO"
+    mvn help:evaluate -Dexpression=$1 | grep -v -e "\[INFO" | grep -v -e "^Download"
 }
 
 function lastBuildNumberForRcPrefix {
