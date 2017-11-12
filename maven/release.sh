@@ -1,44 +1,48 @@
 #!/usr/bin/env bash
 
 function mvnExpression {
-    mvn help:evaluate -Dexpression=$1 | grep -v -e "\[INFO" | grep -v -e "^Download"
+    printf '_EXPRESSION_RESULT_\t${project.version}' | mvn help:evaluate --non-recursive | grep ^_EXPRESSION_RESULT_ | cut -f2
 }
 
 function lastBuildNumberForRcPrefix {
     MINOR_VER=$1
     RESULT=-1
-    for i in $(git branch | grep "${MINOR_VER}"); do
+    for i in $(git tag | grep "${MINOR_VER}"); do
         i="${i##*.}"
         RESULT=$(( $i > $RESULT ? $i : $RESULT ))
     done
     echo ${RESULT}
 }
 
-BRANCH_PREFIX="rc/"
-PROFILES="inpar,deploy"
+PROFILES="deploy"
 
 export ARTIFACT_ID="$(mvnExpression "project.artifactId")"
 export CURRENT_VER="$(mvnExpression "project.version")"
 export MINOR_VER="$(echo ${CURRENT_VER} | sed "s/-SNAPSHOT//g")"
-export RC_BRANCH_PREFIX="rc/${MINOR_VER}"
-export NEXT_BUILD_NUMBER=$(( $(lastBuildNumberForRcPrefix ${RC_BRANCH_PREFIX}) + 1))
+export RC_TAG_PREFIX="release-${MINOR_VER}"
+export NEXT_BUILD_NUMBER=$(( $(lastBuildNumberForRcPrefix ${RC_TAG_PREFIX}) + 1))
 export NEXT_VER="$MINOR_VER.$NEXT_BUILD_NUMBER"
-export RC_BRANCH="$RC_BRANCH_PREFIX.$NEXT_BUILD_NUMBER"
+export RC_TAG="$RC_TAG_PREFIX.$NEXT_BUILD_NUMBER"
 
-echo "PROFILES    = $PROFILES"
+echo "PROFILES = $PROFILES"
 echo "ARTIFACT_ID = $ARTIFACT_ID"
 echo "CURRENT_VER = $CURRENT_VER"
 echo "MINOR_VER = $MINOR_VER"
-echo "RC_BRANCH_PREFIX = $RC_BRANCH_PREFIX"
+echo "RC_TAG_PREFIX = $RC_TAG_PREFIX"
 echo "NEXT_BUILD_NUMBER = $NEXT_BUILD_NUMBER"
 echo "NEXT_VER = $NEXT_VER"
-echo "RC_BRANCH = $RC_BRANCH"
+echo "RC_TAG = $RC_TAG"
 
 echo "[INFO] -----------------------------------------------------------"
 
+if [[ "$CURRENT_VER" != *"-SNAPSHOT" ]]; then
+    echo "[ERROR] You shouldn't release not SNAPSHOT version"
+    exit 1
+fi
+
 BUILD_USER=$1
 if [ "$BUILD_USER" == "" ]; then
-    BUILD_USER="-";
+    BUILD_USER="unknown user";
 fi
 
 echo "BUILD_USER=${BUILD_USER}"
@@ -67,18 +71,17 @@ if [ "$JENKINS_URL" == "" ]; then
 fi
 
 echo "[INFO] setup new version in pom"
-git branch "${RC_BRANCH}" \
-    && git checkout "${RC_BRANCH}" \
-    && mvn -B versions:set -DnewVersion="${NEXT_VER}" -DgenerateBackupPoms=false \
+mvn -B versions:set -DnewVersion="${NEXT_VER}" -DgenerateBackupPoms=false \
     && git add -A \
-    && git commit -m "release ${NEXT_VER} (by ${BUILD_USER})"
+    && git commit -m "release ${NEXT_VER} (by ${BUILD_USER})" \
+    && git tag "${RC_TAG}"
 
-echo "[INFO] checkout tag \"${RC_BRANCH}\" and perform DEPLOY to repository with profiles \"${PROFILES}\""
-git checkout "${RC_BRANCH}" && mvn deploy -P "${PROFILES}" -DskipTests=true
+echo "[INFO] checkout tag \"${RC_TAG}\" and perform DEPLOY to repository with profiles \"${PROFILES}\""
+git checkout "${RC_TAG}" && mvn deploy -P "${PROFILES}" -DskipTests=true
 
 echo "[INFO] push changes to SCM"
 git push origin --follow-tags
 
 echo "[SUCCESS] release SUCCESS"
-git checkout master --force && git clean -f -d && mvn release:clean
+git checkout master && git reset --hard origin/master && git clean -f -d && mvn release:clean
 
