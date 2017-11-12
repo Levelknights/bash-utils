@@ -77,11 +77,11 @@ mvn -B versions:set -DnewVersion="${NEXT_VER}" -DgenerateBackupPoms=false \
     && git tag "${RC_TAG}"
 
 echo "[INFO] checkout tag \"${RC_TAG}\" and perform DEPLOY to repository with profiles \"${PROFILES}\""
-git checkout "${RC_TAG}" && mvn deploy -P "${PROFILES}" -DskipTests=true
+mvn deploy -P "${PROFILES}" -DskipTests=true
 
 echo "[INFO] push changes to SCM"
 git push origin --follow-tags
 
 echo "[SUCCESS] release SUCCESS"
-git checkout master && git reset --hard origin/master && git clean -f -d && mvn release:clean
+git reset --hard origin/master && git clean -f -d && mvn release:clean
 
