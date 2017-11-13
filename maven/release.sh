@@ -45,8 +45,6 @@ if [ "$BUILD_USER" == "" ]; then
     BUILD_USER="unknown user";
 fi
 
-echo "BUILD_USER=${BUILD_USER}"
-
 CURRENT_BRANCH=$(git symbolic-ref HEAD 2>/dev/null)
 if [ "$CURRENT_BRANCH" != "refs/heads/master" ]; then
     git branch
@@ -61,13 +59,15 @@ if [ -n "$CHANGED" ]; then
     exit 1
 fi
 
-if [ "$JENKINS_URL" == "" ]; then
+if [ "$JENKINS_HOME" == "" ]; then
     read -p "Are you sure? " -n 1 -r
     if [[ $REPLY =~ ^[^Yy]$ ]]; then
       echo
       exit 1;
     fi
     echo
+else 
+    BUILD_USER="Jenkins"
 fi
 
 echo "[INFO] setup new version in pom"
