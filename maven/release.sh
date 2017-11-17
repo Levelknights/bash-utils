@@ -7,7 +7,7 @@ function mvnExpression {
 function lastBuildNumberForRcPrefix {
     MINOR_VER=$1
     RESULT=-1
-    for i in $(git tag | grep "${MINOR_VER}"); do
+    for i in $(git ls-remote --tags -q --symref origin | xargs | tr -s ' ' | cut -d ' ' -f2 | grep "${MINOR_VER}"); do
         i="${i##*.}"
         RESULT=$(( $i > $RESULT ? $i : $RESULT ))
     done
@@ -21,6 +21,8 @@ function endWith() {
 
 BRANCH_PREFIX="rc/"
 PROFILES="deploy"
+
+git fetch origin
 
 export ARTIFACT_ID="$(mvnExpression "project.artifactId")"
 export CURRENT_VER="$(mvnExpression "project.version")"
@@ -83,7 +85,7 @@ git commit -m "release ${NEXT_VER} (by ${BUILD_USER})" || endWith "Could not com
 git tag "${RC_TAG}" || endWith "Could not create tag ${RC_TAG}"
 
 echo "[INFO] push changes to SCM"
-git push origin --follow-tags || endWith "Could not push tags to origin"
+git push --follow-tags origin master || endWith "Could not push tags to origin"
 
 echo "[INFO] checkout tag \"${RC_TAG}\" and perform DEPLOY to repository with profiles \"${PROFILES}\""
 mvn deploy -P "${PROFILES}" -DskipTests=true || endWith "Could not successfully deploy"
