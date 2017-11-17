@@ -90,7 +90,7 @@ git add -A || endWith "Could not add changed files to commit"
 git commit -m "continue develop ${CURRENT_VER} (by ${BUILD_USER})" || endWith "Could not commit files as release ${NEXT_VER}"
 
 echo "[INFO] push changes to SCM"
-git push --follow-tags origin master || endWith "Could not push tags to origin"
+git push --tags origin master || endWith "Could not push tags to origin"
 
 echo "[INFO] checkout tag \"${RC_TAG}\" and perform DEPLOY to repository with profiles \"${PROFILES}\""
 git checkout -q ${RC_TAG} || endWith "Could not checkout tag ${RC_TAG}"
