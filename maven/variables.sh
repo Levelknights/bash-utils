@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function mvnExpression {
-    mvn help:evaluate -Dexpression=$1 | grep -v -e "\[INFO" | grep -v -e "^Download"
+    printf '_EXPRESSION_RESULT_\t${project.version}' | mvn help:evaluate --non-recursive | grep ^_EXPRESSION_RESULT_ | cut -f2
 }
 
 function end_with() {
@@ -75,10 +75,10 @@ fi
 
 
 if [ $OUTPUT ]; then
-	echo "PROFILES    = $PROFILES"
-	echo "ARTIFACT_ID = $ARTIFACT_ID"
-	echo "CURRENT_VER = $CURRENT_VER"
-	echo "RELEASE_VER = $RELEASE_VER"
-	echo "NEXT_VER    = $NEXT_VER"
-	echo "TAG_NAME    = $TAG_NAME"
+	echo "PROFILES=$PROFILES"
+	echo "ARTIFACT_ID=$ARTIFACT_ID"
+	echo "CURRENT_VER=$CURRENT_VER"
+	echo "RELEASE_VER=$RELEASE_VER"
+	echo "TAG_NAME=$TAG_NAME"
+	echo "NEXT_VER=$NEXT_VER"
 fi
