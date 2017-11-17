@@ -7,7 +7,7 @@ function mvnExpression {
 function lastBuildNumberForRcPrefix {
     MINOR_VER=$1
     RESULT=-1
-    for i in $(git ls-remote --tags -q --symref origin | xargs | tr -s ' ' | cut -d ' ' -f2 | grep "${MINOR_VER}"); do
+    for i in $(git ls-remote --tags -q --symref origin | cut -d$'\t' -f2 | grep -v -e '{}$' | grep "${MINOR_VER}"); do
         i="${i##*.}"
         RESULT=$(( $i > $RESULT ? $i : $RESULT ))
     done
