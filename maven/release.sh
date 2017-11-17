@@ -14,6 +14,11 @@ function lastBuildNumberForRcPrefix {
     echo ${RESULT}
 }
 
+function endWith() {
+    echo "$*" >&2
+    exit 1
+}
+
 BRANCH_PREFIX="rc/"
 PROFILES="inpar,deploy"
 
@@ -67,18 +72,20 @@ if [ "$JENKINS_URL" == "" ]; then
 fi
 
 echo "[INFO] setup new version in pom"
-git branch "${RC_BRANCH}" \
-    && git checkout "${RC_BRANCH}" \
-    && mvn -B versions:set -DnewVersion="${NEXT_VER}" -DgenerateBackupPoms=false \
-    && git add -A \
-    && git commit -m "release ${NEXT_VER} (by ${BUILD_USER})"
+git branch "${RC_BRANCH}" || endWith "Could not create branch ${RC_BRANCH}"
+git checkout "${RC_BRANCH}" || endWith "Could not checkout branch ${RC_BRANCH}"
+mvn -B versions:set -DnewVersion="${NEXT_VER}" -DgenerateBackupPoms=false || endWith "Could not set new version ${NEXT_VER}"
+git add -A || endWith "Could not add changed files to commit"
+git commit -m "release ${NEXT_VER} (by ${BUILD_USER})" || endWith "Could not commit files as release ${NEXT_VER}"
 
 echo "[INFO] checkout tag \"${RC_BRANCH}\" and perform DEPLOY to repository with profiles \"${PROFILES}\""
-git checkout "${RC_BRANCH}" && mvn deploy -P "${PROFILES}" -DskipTests=true
+git checkout "${RC_BRANCH}" || endWith "Could not checkout branch ${RC_BRANCH} for deployment"
+mvn deploy -P "${PROFILES}" -DskipTests=true || endWith "Could not successfully deploy"
 
 echo "[INFO] push changes to SCM"
-git push origin --follow-tags
+git push origin --follow-tags || endWith "Could not push tags to origin"
 
 echo "[SUCCESS] release SUCCESS"
-git checkout master --force && git clean -f -d && mvn release:clean
+git checkout master --force && git clean -f -d && mvn release:clean || endWith "Could cleanup workspace"
+
 
