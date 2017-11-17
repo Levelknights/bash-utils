@@ -82,11 +82,11 @@ git add -A || endWith "Could not add changed files to commit"
 git commit -m "release ${NEXT_VER} (by ${BUILD_USER})" || endWith "Could not commit files as release ${NEXT_VER}"
 git tag "${RC_TAG}" || endWith "Could not create tag ${RC_TAG}"
 
-echo "[INFO] checkout tag \"${RC_TAG}\" and perform DEPLOY to repository with profiles \"${PROFILES}\""
-mvn deploy -P "${PROFILES}" -DskipTests=true || endWith "Could not successfully deploy"
-
 echo "[INFO] push changes to SCM"
 git push origin --follow-tags || endWith "Could not push tags to origin"
+
+echo "[INFO] checkout tag \"${RC_TAG}\" and perform DEPLOY to repository with profiles \"${PROFILES}\""
+mvn deploy -P "${PROFILES}" -DskipTests=true || endWith "Could not successfully deploy"
 
 echo "[SUCCESS] release SUCCESS"
 git reset --hard origin/master && git clean -f -d && mvn release:clean || endWith "Could cleanup workspace"
