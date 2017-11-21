@@ -27,7 +27,7 @@ git fetch origin
 export ARTIFACT_ID="$(mvnExpression "project.artifactId")"
 export CURRENT_VER="$(mvnExpression "project.version")"
 export MINOR_VER="$(echo ${CURRENT_VER} | sed "s/-SNAPSHOT//g")"
-export RC_TAG_PREFIX="release-${MINOR_VER}"
+export RC_TAG_PREFIX="release/${MINOR_VER}"
 export NEXT_BUILD_NUMBER=$(( $(lastBuildNumberForRcPrefix ${RC_TAG_PREFIX}) + 1))
 export NEXT_VER="$MINOR_VER.$NEXT_BUILD_NUMBER"
 export RC_TAG="$RC_TAG_PREFIX.$NEXT_BUILD_NUMBER"
