@@ -65,10 +65,6 @@ fi
 echo "[INFO] Create release branch & setup new version in node"
 git checkout -b "${RELEASE_TAG}"
 npm version "${NEXT_VER}" || endWith "Could not set new version ${NEXT_VER}"
-git add -A || endWith "Could not add changed files to commit"
-git commit -m "release ${NEXT_VER} (by ${BUILD_USER})" || endWith "Could not commit files as release ${NEXT_VER}"
-
-git tag "${RELEASE_TAG}" || endWith "Could not create tag ${RELEASE_TAG}"
 
 echo "[INFO] push changes to SCM"
 git push --set-upstream origin develop || endWith "COuld not push branch to origin"
