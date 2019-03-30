@@ -53,6 +53,7 @@ git add -A && git commit -m"new working version ${NEW_WORKING_VERSION} (by ${BUI
 
 echo "[INFO] push changes to SCM"
 git push --set-upstream origin || endWith "Could not push branch to origin"
+git push --tags origin || endWith "Could not push tags to origin"
 git push --all origin || endWith "Could not push all to origin"
 
 
