@@ -1,42 +1,9 @@
 #!/usr/bin/env bash
 
-function currentAppVersion() {
-    node -p "require('./package').version"
-}
-
-function lastBuildNumberForRcPrefix {
-    MINOR_VER=$1
-    RESULT=0
-    for i in $(git ls-remote --tags -q --symref origin | cut -d$'\t' -f2 | grep -v -e '{}$' | grep "${MINOR_VER}"); do
-        i="${i##*.}"
-        RESULT=$(( $i > $RESULT ? $i : $RESULT ))
-    done
-    echo ${RESULT}
-}
-
 function endWith() {
     echo "$*" >&2
     exit 1
 }
-
-RELEASE_BRANCH_PREFIX="release/"
-
-git fetch origin
-
-export CURRENT_VER="$(currentAppVersion)"
-export MINOR_VER="$(echo ${CURRENT_VER} | sed 's/\.[^.]*$//')"
-export RELEASE_TAG_PREFIX="release/${MINOR_VER}"
-export NEXT_BUILD_NUMBER=$(( $(lastBuildNumberForRcPrefix ${RELEASE_TAG_PREFIX}) + 1))
-export NEXT_VER="$MINOR_VER.$NEXT_BUILD_NUMBER"
-export RELEASE_TAG="$RELEASE_TAG_PREFIX.$NEXT_BUILD_NUMBER"
-
-echo "CURRENT_VER = $CURRENT_VER"
-echo "MINOR_VER = $MINOR_VER"
-echo "RELEASE_TAG_PREFIX = $RELEASE_TAG_PREFIX"
-echo "NEXT_BUILD_NUMBER = $NEXT_BUILD_NUMBER"
-echo "NEXT_VER = $NEXT_VER"
-echo "RELEASE_TAG = $RELEASE_TAG"
-
 echo "[INFO] -----------------------------------------------------------"
 
 BUILD_USER=$1
@@ -62,11 +29,30 @@ else
     BUILD_USER="Jenkins"
 fi
 
-echo "[INFO] Create release branch & setup new version in node"
-git checkout -b "${RELEASE_TAG}"
-npm version "${NEXT_VER}" || endWith "Could not set new version ${NEXT_VER}"
+git fetch origin
+
+# git flow release (new branch and tag)
+RELEASE_BRANCH_NAME=$(node -p "require('./package').version" | sed "s/-SNAPSHOT//g")
+git flow release start "${RELEASE_BRANCH_NAME}"
+
+# change version
+yarn version --minor --no-git-tag-version || endWith "Could not set version in package.json"
+RELEASE_VERSION=$(node -p "require('./package').version") || endWith "Could not get current version"
+git add -A && git commit -m"change version to ${RELEASE_VERSION} (by ${BUILD_USER})" || endWith "Could not commit release version"
+
+# finish release
+export GIT_MERGE_AUTOEDIT=no
+git flow release finish -m "release version ${RELEASE_VERSION}" "${RELEASE_VERSION}"  || endWith "Could not execute git flow release"
+export GIT_MERGE_AUTOEDIT=""
+
+# increase develop version 
+yarn version --minor --no-git-tag-version || endWith "Could not increment version"
+NEW_WORKING_VERSION="$(node -p "require('./package').version")-SNAPSHOT" || endWith "Could not prepare new version with snapshot"
+yarn version --new-version="${NEW_WORKING_VERSION}" --no-git-tag-version || endWith "Could not set version with snapshot"
+git add -A && git commit -m"new working version ${NEW_WORKING_VERSION} (by ${BUILD_USER})" || endWith "Could not commit new working version"
 
 echo "[INFO] push changes to SCM"
-git push --set-upstream origin develop || endWith "COuld not push branch to origin"
-git push --tags origin develop || endWith "Could not push tags to origin"
+git push --set-upstream origin || endWith "Could not push branch to origin"
+git push --all origin || endWith "Could not push all to origin"
+
 
