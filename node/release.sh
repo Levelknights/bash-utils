@@ -30,6 +30,7 @@ else
 fi
 
 git fetch origin
+git flow init
 
 # git flow release (new branch and tag)
 RELEASE_BRANCH_NAME=$(node -p "require('./package').version" | sed "s/-SNAPSHOT//g")
