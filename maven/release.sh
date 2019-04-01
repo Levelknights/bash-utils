@@ -83,8 +83,9 @@ mvn -B versions:set -DnewVersion="${NEXT_VER}" -DgenerateBackupPoms=false || end
 git add -A || endWith "Could not add changed files to commit"
 git commit -m "release ${NEXT_VER} (by ${BUILD_USER})" || endWith "Could not commit files as release ${NEXT_VER}"
 git tag "${RC_TAG}" || endWith "Could not create tag ${RC_TAG}"
+export RELEASE_VERSION=${NEXT_VER}
 
-echo "[INFO] nset SNAPSHOT version back in pom"
+echo "[INFO] set SNAPSHOT version back in pom"
 mvn -B versions:set -DnewVersion="${CURRENT_VER}" -DgenerateBackupPoms=false || endWith "Could not set back version to ${CURRENT_VER}"
 git add -A || endWith "Could not add changed files to commit"
 git commit -m "continue develop ${CURRENT_VER} (by ${BUILD_USER})" || endWith "Could not commit files as release ${NEXT_VER}"
@@ -96,6 +97,4 @@ echo "[INFO] checkout tag \"${RC_TAG}\" and perform DEPLOY to repository with pr
 git checkout -q ${RC_TAG} || endWith "Could not checkout tag ${RC_TAG}"
 mvn deploy -P "${PROFILES}" -DskipTests=true || endWith "Could not successfully deploy"
 
-echo "[SUCCESS] release SUCCESS"
-git checkout master && git reset --hard origin/master && git clean -f -d && mvn release:clean || endWith "Could cleanup workspace"
 

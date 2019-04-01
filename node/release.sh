@@ -40,6 +40,7 @@ git flow release start "${RELEASE_BRANCH_NAME}"
 yarn version --minor --no-git-tag-version || endWith "Could not set version in package.json"
 RELEASE_VERSION=$(node -p "require('./package').version") || endWith "Could not get current version"
 git add -A && git commit -m"change version to ${RELEASE_VERSION} (by ${BUILD_USER})" || endWith "Could not commit release version"
+export RELEASE_VERSION
 
 # finish release
 export GIT_MERGE_AUTOEDIT=no
